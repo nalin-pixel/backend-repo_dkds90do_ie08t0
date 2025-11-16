@@ -1,48 +1,70 @@
 """
-Database Schemas
+Database Schemas for WonderLens Chronicles
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model represents a collection in MongoDB.
+Collection name is the lowercase of the class name.
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List, Literal
+from datetime import datetime
 
-# Example schemas (replace with your own):
+# -----------------------------
+# Core domain schemas
+# -----------------------------
 
 class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    display_name: str = Field(..., description="Public display name")
+    email: str = Field(..., description="Unique email address")
+    auth_provider: Literal["password", "google", "apple", "anonymous"] = "anonymous"
+    auth_uid: Optional[str] = Field(None, description="UID from auth provider")
+    stage: Literal["Awakening", "Healing", "Embodiment", "Manifestation", "Communion"] = "Awakening"
+    locale: Literal["en", "sw", "yo", "am"] = "en"
+    avatar_url: Optional[str] = None
+    premium_tier: Literal["free", "premium", "master"] = "free"
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+class JournalEntry(BaseModel):
+    user_id: str = Field(..., description="User's id")
+    content: str = Field(..., description="Journal text content")
+    mood: Optional[str] = Field(None, description="User reported mood")
+    audio_url: Optional[str] = Field(None, description="Uploaded voice URL if any")
+    sentiment: Optional[str] = Field(None, description="Detected sentiment label")
+    theme: Optional[str] = Field(None, description="Detected dominant theme/keyword")
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Mantra(BaseModel):
+    user_id: str
+    text: str
+    meaning: Optional[str] = None
+    stage: Optional[str] = None
+    mood: Optional[str] = None
+    journal_theme: Optional[str] = None
+    date: Optional[str] = Field(None, description="YYYY-MM-DD")
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class OracleConsult(BaseModel):
+    user_id: Optional[str] = None
+    prompt: str
+    interpretation: Optional[str] = None
+    references: Optional[List[str]] = None
+
+class MeditationSession(BaseModel):
+    user_id: str
+    environment: Literal["forest", "mt_kenya", "desert_temple"] = "forest"
+    duration_minutes: int = 10
+    started_at: Optional[datetime] = None
+    completed: bool = False
+
+class Lesson(BaseModel):
+    slug: str
+    title: str
+    body: str
+    badge: Optional[Literal["Initiate", "Seer", "Sage"]] = None
+
+class Payment(BaseModel):
+    user_id: str
+    provider: Literal["stripe", "mpesa", "paypal"]
+    amount_cents: int
+    currency: str = "USD"
+    status: Literal["pending", "succeeded", "failed"] = "pending"
+    reference: Optional[str] = None
+
+# Note: The database helper and viewer will use these models for validation.
